@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>점검 우선순위 보드 (교육용)</title>
+<style>
+:root{--bg:#0e1116;--surface:#171c24;--surface2:#1e252f;--ink:#eef1f5;--ink2:#b7c0cc;--muted:#8c97a5;--line:#2a323d;
+  --g0:#5b9bff;--g1:#e6c229;--g2:#f28e2b;--g3:#ff5a4f;--warn:#f2b84b}
+*{box-sizing:border-box}html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--ink2);margin:0 0 12px}
+.notes{display:grid;gap:6px;margin-bottom:14px}
+.note{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--ink2)}
+.note b{color:var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:12px;padding:12px 14px;display:block}
+.card:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.card[aria-pressed=true]{background:var(--surface2);border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.card .n{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.card .t{font-weight:700;color:var(--c)}
+.card .s{font-size:12px;color:var(--ink2)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.bar input{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:5px 9px;width:150px}
+.bar button.all{font:inherit;font-size:13px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:5px 12px;cursor:pointer}
+.bar .info{color:var(--ink2);font-size:13px}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.head,.item>button{display:grid;grid-template-columns:52px 96px 74px minmax(110px,1fr) 64px 60px 22px;gap:8px;align-items:center;padding:8px 12px}
+.head{color:var(--muted);font-size:12px;font-weight:600;border-bottom:1px solid var(--line);background:var(--surface2)}
+.item{border-bottom:1px solid var(--line)}
+.item>button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:52px 96px 74px minmax(110px,1fr) 64px 60px 22px;gap:8px;align-items:center;padding:8px 12px;cursor:pointer}
+.item>button:hover{background:var(--surface2)}
+.item>button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.badge{display:inline-block;text-align:center;border-radius:999px;padding:0 10px;font-weight:700;font-size:12px;color:#0e1116;background:var(--c)}
+.meter{display:block;height:10px;background:var(--surface2);border-radius:5px;position:relative;overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--c);border-radius:5px}
+.num{font-variant-numeric:tabular-nums}
+.chev{color:var(--muted);transition:transform .15s}.item.open .chev{transform:rotate(90deg)}
+.detail{padding:6px 14px 16px;background:var(--bg);border-top:1px dashed var(--line)}
+.detail .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px}
+.detail h3{font-size:13px;margin:10px 0 4px;color:var(--ink2)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 12px}dt{color:var(--muted)}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.act p{margin:3px 0}
+.stop{margin-top:8px;border:1px solid var(--g3);border-radius:8px;padding:7px 10px;font-size:13px;background:#ff5a4f14}
+.more{display:block;width:100%;font:inherit;color:var(--ink);background:var(--surface2);border:0;border-top:1px solid var(--line);padding:10px;cursor:pointer}
+.empty{padding:20px;text-align:center;color:var(--muted)}
+.foot{color:var(--muted);font-size:12px;margin-top:12px}
+@media(max-width:860px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.detail .cols{grid-template-columns:1fr}}
+@media(max-width:520px){
+  .head{display:none}
+  .item>button{grid-template-columns:44px 1fr auto 18px;grid-template-areas:"r id g c" "r m m c"}
+  .item>button .r{grid-area:r}.item>button .id{grid-area:id}.item>button .g{grid-area:g}.item>button .m{grid-area:m}.item>button .ty,.item>button .sc{display:none}
+  .item>button .c{grid-area:c}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>점검 우선순위 보드 <span style="font-size:14px;color:var(--warn);font-weight:600">(교육용 예시)</span></h1>
+<p class="sub">랜덤포레스트 예측점수가 높은 관측 샘플부터 점검 순서를 보여줍니다. 등급을 누르면 해당 목록만, 항목을 누르면 센서값·점수·권장 조치가 펼쳐집니다.</p>
+<div class="notes">
+  <div class="note"><b>점수는 미보정 모델 출력이며 실제 고장 확률이 아닙니다.</b> 조치·SLA·에스컬레이션은 <b>교육용 예시</b>이며 실제 운영 전에 현장 기준으로 검증해야 합니다.</div>
+  <div class="note">각 행은 <b>관측 샘플 1건</b>입니다(설비 한 대나 설비 ID가 아니며, 샘플 번호는 시간 순서도 아닙니다). 순위는 <b>예측점수만</b> 사용했고 실제 고장 라벨은 쓰지 않았습니다.</div>
+  <div class="note">위험 등급이라도 <b>설비 정지 여부는 자동으로 결정하지 않습니다.</b> 담당자가 현장 절차에 따라 판단합니다.</div>
+</div>
+<div class="cards" id="cards" role="group" aria-label="등급 선택"></div>
+<div class="bar">
+  <button class="all" id="btnAll">전체 등급 보기</button>
+  <label class="info" for="q">샘플 번호 찾기</label><input id="q" inputmode="numeric" placeholder="예: 4428">
+  <span class="info" id="info"></span>
+</div>
+<div class="list" id="list">
+  <div class="head"><span>순위</span><span>샘플 번호</span><span>등급</span><span>예측점수 (높을수록 먼저 점검)</span><span>점수</span><span>제품 유형</span><span></span></div>
+  <div id="rows"></div>
+  <button class="more" id="more"></button>
+</div>
+<div class="foot" id="foot"></div>
+</div>
+<script>
+const D=/*DATA*/;
+const $=id=>document.getElementById(id), f=(n,d=0)=>n.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const G=D.grades, GC={정상:'var(--g0)',주의:'var(--g1)',경고:'var(--g2)',위험:'var(--g3)'}, PAGE=50;
+// 행: [샘플번호, 유형, 공기, 공정, rpm, 토크, 마모, temp_diff, power, tool_torque, 점수, 등급인덱스]
+const ROWS=D.rows.map(r=>({id:r[0],type:r[1],air:r[2],proc:r[3],rpm:r[4],tq:r[5],wear:r[6],td:r[7],pw:r[8],tt:r[9],s:r[10],g:G[r[11]].name}));
+ROWS.sort((a,b)=>b.s-a.s||a.id-b.id); ROWS.forEach((r,i)=>r.rank=i+1);   // 예측점수 내림차순, 동점은 샘플 번호 오름차순
+const cnt={};ROWS.forEach(r=>cnt[r.g]=(cnt[r.g]||0)+1);
+let sel=null, shown=PAGE, open=null, query='';
+$('cards').innerHTML=G.map(g=>`<button class="card" style="--c:${GC[g.name]}" data-g="${g.name}" aria-pressed="false"><div class="t">${g.name}</div><div class="n">${f(cnt[g.name])}건</div><div class="s">${g.range} · 전체의 ${(cnt[g.name]/ROWS.length*100).toFixed(1)}%</div></button>`).join('');
+function filtered(){return ROWS.filter(r=>(!sel||r.g===sel)&&(!query||String(r.id).includes(query)))}
+function actionHTML(g){const a=G.find(x=>x.name===g.g);
+  return `<h3>권장 조치 (교육용 예시)</h3><div class="act"><p><b>확인 내용</b> · ${a.check}</p><p><b>점검 조치</b> · ${a.action}</p><p><b>확인 SLA</b> · ${a.sla1} &nbsp; <b>조치 SLA</b> · ${a.sla2}</p><p><b>에스컬레이션</b> · ${a.esc}</p></div>`+
+  (g.g==='위험'?`<div class="stop"><b>정지 여부는 자동으로 결정하지 않습니다.</b> 담당자가 즉시 확인하고, 설비를 멈출지는 현장 안전·품질·생산 절차와 책임자 판단에 따릅니다.</div>`:'')}
+function detailHTML(r){
+  return `<div class="detail"><div class="cols"><div><h3>관측 샘플 ${r.id} · ${r.g} 등급</h3><dl>
+  <dt>예측점수 (미보정)</dt><dd><b>${r.s.toFixed(3)}</b></dd><dt>점검 순위</dt><dd>${f(r.rank)} / ${f(ROWS.length)}</dd><dt>제품 유형</dt><dd>${r.type}</dd>
+  <dt>공기 온도</dt><dd>${f(r.air,1)} K</dd><dt>공정 온도</dt><dd>${f(r.proc,1)} K</dd><dt>회전 속도</dt><dd>${f(r.rpm)} rpm</dd><dt>토크</dt><dd>${f(r.tq,1)} Nm</dd><dt>공구 마모</dt><dd>${f(r.wear)} min</dd>
+  <dt>temp_diff (파생)</dt><dd>${f(r.td,1)} K</dd><dt>power (파생)</dt><dd>${f(r.pw)} W</dd><dt>마모×토크 (파생)</dt><dd>${f(r.tt)}</dd></dl></div><div>${actionHTML(r)}</div></div></div>`}
+function render(){
+  const L=filtered(), part=L.slice(0,shown);
+  document.querySelectorAll('.card').forEach(c=>c.setAttribute('aria-pressed',c.dataset.g===sel));
+  $('info').textContent=`${sel?sel+' 등급':'전체 등급'} ${f(L.length)}건 · 예측점수 높은 순`+(L.length>part.length?` · ${f(part.length)}건 표시`:'');
+  $('rows').innerHTML=part.length?part.map(r=>`<div class="item${open===r.id?' open':''}" data-id="${r.id}"><button aria-expanded="${open===r.id}"><span class="r num">${f(r.rank)}</span><span class="id num">샘플 ${r.id}</span><span class="g"><span class="badge" style="--c:${GC[r.g]}">${r.g}</span></span><span class="m"><span class="meter" style="--c:${GC[r.g]}"><i style="width:${r.s*100}%"></i></span></span><span class="sc num">${r.s.toFixed(3)}</span><span class="ty">${r.type}형</span><span class="chev">▸</span></button>${open===r.id?detailHTML(r):''}</div>`).join(''):'<div class="empty">조건에 맞는 관측 샘플이 없습니다.</div>';
+  const rest=L.length-part.length; $('more').style.display=rest>0?'block':'none'; $('more').textContent=`다음 ${Math.min(PAGE,rest)}건 더 보기 (남은 ${f(rest)}건)`;
+}
+$('cards').addEventListener('click',e=>{const c=e.target.closest('.card');if(!c)return;sel=sel===c.dataset.g?null:c.dataset.g;shown=PAGE;open=null;render()});
+$('btnAll').onclick=()=>{sel=null;query='';$('q').value='';shown=PAGE;open=null;render()};
+$('q').addEventListener('input',e=>{query=e.target.value.replace(/\D/g,'');shown=PAGE;open=null;render()});
+$('more').onclick=()=>{shown+=PAGE;render()};
+$('rows').addEventListener('click',e=>{const it=e.target.closest('.item');if(!it||!e.target.closest('button'))return;const id=+it.dataset.id;open=open===id?null:id;render();if(open){const n=document.querySelector(`.item[data-id="${id}"]`);n&&n.scrollIntoView({block:'nearest'})}});
+$('foot').textContent=`데이터: Test ${f(ROWS.length)}건의 랜덤포레스트 예측점수(저장된 예측 결과)와 경보 등급. 등급 경계 0.30·0.60·0.85, 경계값은 상위 등급. 점수가 같으면 샘플 번호 순.`;
+render();
+</script>
+</body>
+</html>
