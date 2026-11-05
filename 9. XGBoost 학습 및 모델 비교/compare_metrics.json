@@ -1,0 +1,166 @@
+{
+ "metrics": {
+  "RandomForest": {
+   "accuracy": 0.975,
+   "precision": 0.5957446808510638,
+   "recall": 0.8235294117647058,
+   "f1": 0.691358024691358,
+   "roc_auc": 0.9741885884788699,
+   "pr_auc": 0.8281086268044722,
+   "TN": 1894,
+   "FP": 38,
+   "FN": 12,
+   "TP": 56
+  },
+  "XGBoost": {
+   "accuracy": 0.9745,
+   "precision": 0.5934065934065934,
+   "recall": 0.7941176470588235,
+   "f1": 0.6792452830188679,
+   "roc_auc": 0.9767004627938132,
+   "pr_auc": 0.8551174888598169,
+   "TN": 1895,
+   "FP": 37,
+   "FN": 14,
+   "TP": 54
+  }
+ },
+ "threshold_sensitivity": [
+  {
+   "model": "RandomForest",
+   "threshold": 0.5,
+   "recall": 0.8235294117647058,
+   "precision": 0.5957446808510638,
+   "FN": 12,
+   "FP": 38,
+   "note": NaN
+  },
+  {
+   "model": "RandomForest",
+   "threshold": 0.4,
+   "recall": 0.8529411764705882,
+   "precision": 0.5272727272727272,
+   "FN": 10,
+   "FP": 52,
+   "note": NaN
+  },
+  {
+   "model": "RandomForest",
+   "threshold": 0.3,
+   "recall": 0.8823529411764706,
+   "precision": 0.44776119402985076,
+   "FN": 8,
+   "FP": 74,
+   "note": NaN
+  },
+  {
+   "model": "RandomForest",
+   "threshold": 0.2,
+   "recall": 0.9117647058823529,
+   "precision": 0.3803680981595092,
+   "FN": 6,
+   "FP": 101,
+   "note": NaN
+  },
+  {
+   "model": "RandomForest",
+   "threshold": 0.1,
+   "recall": 0.9558823529411765,
+   "precision": 0.2653061224489796,
+   "FN": 3,
+   "FP": 180,
+   "note": NaN
+  },
+  {
+   "model": "RandomForest",
+   "threshold": 0.44,
+   "recall": 0.8529411764705882,
+   "precision": 0.5858585858585859,
+   "FN": 10,
+   "FP": 41,
+   "note": "재현율≥0.85 최고 임계값"
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.5,
+   "recall": 0.7941176470588235,
+   "precision": 0.5934065934065934,
+   "FN": 14,
+   "FP": 37,
+   "note": NaN
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.4,
+   "recall": 0.8088235294117647,
+   "precision": 0.55,
+   "FN": 13,
+   "FP": 45,
+   "note": NaN
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.3,
+   "recall": 0.8529411764705882,
+   "precision": 0.5321100917431193,
+   "FN": 10,
+   "FP": 51,
+   "note": NaN
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.2,
+   "recall": 0.8676470588235294,
+   "precision": 0.49166666666666664,
+   "FN": 9,
+   "FP": 61,
+   "note": NaN
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.1,
+   "recall": 0.8676470588235294,
+   "precision": 0.4154929577464789,
+   "FN": 9,
+   "FP": 83,
+   "note": NaN
+  },
+  {
+   "model": "XGBoost",
+   "threshold": 0.3139159381389618,
+   "recall": 0.8529411764705882,
+   "precision": 0.5370370370370371,
+   "FN": 10,
+   "FP": 50,
+   "note": "재현율≥0.85 최고 임계값"
+  }
+ ],
+ "importance": {
+  "rf": {
+   "air_temp": 0.049456317506940975,
+   "process_temp": 0.028967855998248495,
+   "rpm": 0.21368764451093858,
+   "torque": 0.17425025915426817,
+   "tool_wear": 0.12968416923975826,
+   "temp_diff": 0.09380444974372716,
+   "power": 0.17450792438513754,
+   "tool_torque_interaction": 0.10619211705718262,
+   "Type_H": 0.005361086922473724,
+   "Type_L": 0.01726535001364699,
+   "Type_M": 0.006822825467677676
+  },
+  "xgb": {
+   "air_temp": 0.01813133805990219,
+   "process_temp": 0.018627872690558434,
+   "rpm": 0.2934485673904419,
+   "torque": 0.07362291216850281,
+   "tool_wear": 0.16080424189567566,
+   "temp_diff": 0.0436755046248436,
+   "power": 0.17509429156780243,
+   "tool_torque_interaction": 0.10205187648534775,
+   "Type_H": 0.05869394540786743,
+   "Type_L": 0.02117500826716423,
+   "Type_M": 0.03467448428273201
+  }
+ }
+}
