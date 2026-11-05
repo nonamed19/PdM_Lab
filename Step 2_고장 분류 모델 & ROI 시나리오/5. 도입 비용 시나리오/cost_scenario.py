@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.family']='Malgun Gothic'; plt.rcParams['axes.unicode_minus']=False
 m=pd.read_csv(sys.argv[1],encoding='utf-8-sig'); out=sys.argv[2]
 r=m[(m.model=='RandomForest')&(m['기준']=='Recall≥0.85 최대 임계값')].iloc[0]
-TP,FP,FN,TN,thr=int(r.TP),int(r.FP),int(r.FN),int(r.TN),float(r.threshold)       # 측정값 (Test, 폴더 10)
+TP,FP,FN,TN,thr=int(r.TP),int(r.FP),int(r.FN),int(r.TN),float(r.threshold)       # 측정값 (Test, Step 2의 4번 폴더)
 YEAR_N,YEAR_FAIL=2000,68                                                         # 가정: 연간 건수
 COST_FAIL,COST_INSP,COST_PM,COST_SYS=5000,100,500,20000                          # 가정: 만 원
 def scen(cf,prev=1.0,tp=TP,fp=FP,fn=FN):
