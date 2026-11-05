@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RF 예측 설명 (SHAP)</title>
+<style>
+:root{--bg:#f6f7f9;--surface:#fff;--ink:#1b1f24;--ink2:#4a5360;--muted:#6b7480;--line:#dfe3e8;--up:#d92d20;--down:#2563c9;--warn:#b00020}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151a;--surface:#1b2027;--ink:#eef1f5;--ink2:#b7c0cc;--muted:#8c97a5;--line:#2e3640;--up:#ff6b5e;--down:#5b9bff;--warn:#ff8a9b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}h1{font-size:20px;margin:0 0 4px}.sub{color:var(--ink2);margin:0 0 12px}
+.note{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--ink2);margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.tabs button[aria-pressed=true]{border-color:var(--ink);font-weight:700;box-shadow:inset 0 -3px 0 var(--ink)}
+.grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+h2{font-size:15px;margin:0 0 8px}dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}dt{color:var(--muted)}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;border-radius:999px;padding:1px 10px;font-weight:700;color:#fff}.bg-f{background:var(--up)}.bg-n{background:var(--down)}
+.expl{background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:10px}
+svg text{font-family:inherit;fill:var(--ink)}.bar{display:grid;grid-template-columns:130px 1fr 54px;gap:8px;align-items:center;margin:4px 0;font-size:13px}
+.bar i{display:block;height:14px;background:#4c78a8;border-radius:3px}.small{font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;color:var(--ink2)}.legend b{display:inline-block;width:12px;height:12px;border-radius:2px}
+</style></head><body><div class="wrap">
+<h1>랜덤포레스트 예측 설명기 (SHAP)</h1>
+<p class="sub">선택한 임계값 <b id="thr"></b> 기준으로 고른 세 사례(맞힌 고장 · 놓친 고장 · 오경보)에서, 어떤 변수가 고장 예측을 높이거나 낮췄는지 봅니다.</p>
+<div class="note"><b>SHAP은 모델 판단의 설명이며 실제 고장 원인을 증명하지 않습니다.</b> 변수끼리 상관이 있으면(토크·회전 속도·power 등) 기여도가 나뉘어 표시됩니다. 데이터는 AI4I 합성 데이터이며, 파생변수 3개는 합성 데이터 생성 규칙 기반이라 실제 설비 기준이 아닙니다. 사례는 개별 샘플 1건일 뿐 일반 규칙이 아닙니다.</div>
+<div class="tabs" id="tabs"></div>
+<div class="grid">
+  <div class="card"><h2>사례 정보</h2><div id="info"></div></div>
+  <div class="card"><h2 id="wfTitle">변수별 기여 (워터폴)</h2>
+    <div class="legend"><span><b style="background:var(--up)"></b>고장 예측을 높임</span><span><b style="background:var(--down)"></b>고장 예측을 낮춤</span><span>기준값 = 균형 Train의 평균 예측 확률</span></div>
+    <div id="wf"></div><div class="expl" id="expl"></div></div>
+</div>
+<div class="card"><h2>참고: Test 무작위 표본 200행의 SHAP 기여도 상위 10개</h2>
+  <div class="small" id="sampInfo" style="margin-bottom:6px"></div><div id="top10"></div>
+  <div class="small">※ 표본이 작고 고장이 적어서 <b>전체 Test의 중요도로 해석하면 안 됩니다.</b> 값은 평균 |SHAP|(확률 단위)입니다.</div></div>
+</div>
+<script>
+const D={
+ "base": 0.5000378444818218,
+ "thr": 0.44,
+ "cases": {
+  "TP": {
+   "kind": "TP",
+   "title": "맞힌 고장 (TP)",
+   "row": 801,
+   "udi": 4428,
+   "type": "M",
+   "actual": 1,
+   "proba": 0.935,
+   "pred": 1,
+   "fail_types": [
+    "HDF"
+   ],
+   "values": {
+    "공기 온도": "302.4 K",
+    "공정 온도": "310.1 K",
+    "회전 속도": "1,379 rpm",
+    "토크": "48.9 Nm",
+    "공구 마모": "107 min",
+    "temp_diff(파생)": "7.7 K",
+    "power(파생)": "7,062 W",
+    "마모×토크(파생)": "5,232"
+   },
+   "shap": [
+    {
+     "feature": "공기 온도",
+     "value": "302.4 K",
+     "shap": 0.0855760159946655
+    },
+    {
+     "feature": "공정 온도",
+     "value": "310.1 K",
+     "shap": 0.019736910286012765
+    },
+    {
+     "feature": "회전 속도",
+     "value": "1,379 rpm",
+     "shap": 0.17713009653624612
+    },
+    {
+     "feature": "토크",
+     "value": "48.9 Nm",
+     "shap": 0.050918921148916316
+    },
+    {
+     "feature": "공구 마모",
+     "value": "107 min",
+     "shap": -0.021747993237615407
+    },
+    {
+     "feature": "temp_diff(파생)",
+     "value": "7.7 K",
+     "shap": 0.22677977116039696
+    },
+    {
+     "feature": "power(파생)",
+     "value": "7,062 W",
+     "shap": -0.038091646462875696
+    },
+    {
+     "feature": "마모×토크(파생)",
+     "value": "5,232",
+     "shap": -0.02018071181316641
+    },
+    {
+     "feature": "Type_H",
+     "value": "아니오",
+     "shap": 0.0033039630679974285
+    },
+    {
+     "feature": "Type_L",
+     "value": "아니오",
+     "shap": -0.03659095905750541
+    },
+    {
+     "feature": "Type_M",
+     "value": "예",
+     "shap": -0.011872212104893315
+    }
+   ],
+   "up": [
+    "temp_diff(파생)",
+    "회전 속도"
+   ],
+   "down": [
+    "power(파생)",
+    "Type_L"
+   ]
+  },
+  "FN": {
+   "kind": "FN",
+   "title": "놓친 고장 (FN)",
+   "row": 144,
+   "udi": 2672,
+   "type": "M",
+   "actual": 1,
+   "proba": 0.11,
+   "pred": 0,
+   "fail_types": [
+    "TWF"
+   ],
+   "values": {
+    "공기 온도": "299.7 K",
+    "공정 온도": "309.3 K",
+    "회전 속도": "1,399 rpm",
+    "토크": "41.9 Nm",
+    "공구 마모": "221 min",
+    "temp_diff(파생)": "9.6 K",
+    "power(파생)": "6,138 W",
+    "마모×토크(파생)": "9,260"
+   },
+   "shap": [
+    {
+     "feature": "공기 온도",
+     "value": "299.7 K",
+     "shap": -0.04793192652325233
+    },
+    {
+     "feature": "공정 온도",
+     "value": "309.3 K",
+     "shap": -0.03730069461479005
+    },
+    {
+     "feature": "회전 속도",
+     "value": "1,399 rpm",
+     "shap": -0.04001748175310202
+    },
+    {
+     "feature": "토크",
+     "value": "41.9 Nm",
+     "shap": -0.08766046531464988
+    },
+    {
+     "feature": "공구 마모",
+     "value": "221 min",
+     "shap": 0.17093363370587294
+    },
+    {
+     "feature": "temp_diff(파생)",
+     "value": "9.6 K",
+     "shap": -0.06027824261916219
+    },
+    {
+     "feature": "power(파생)",
+     "value": "6,138 W",
+     "shap": -0.08635700735733187
+    },
+    {
+     "feature": "마모×토크(파생)",
+     "value": "9,260",
+     "shap": -0.04658936731714623
+    },
+    {
+     "feature": "Type_H",
+     "value": "아니오",
+     "shap": 0.0014815385135603044
+    },
+    {
+     "feature": "Type_L",
+     "value": "아니오",
+     "shap": -0.09957833502792504
+    },
+    {
+     "feature": "Type_M",
+     "value": "예",
+     "shap": -0.05673949617389482
+    }
+   ],
+   "up": [
+    "공구 마모"
+   ],
+   "down": [
+    "Type_L",
+    "토크"
+   ]
+  },
+  "FP": {
+   "kind": "FP",
+   "title": "오경보 (FP)",
+   "row": 1623,
+   "udi": 1170,
+   "type": "L",
+   "actual": 0,
+   "proba": 0.605,
+   "pred": 1,
+   "fail_types": [],
+   "values": {
+    "공기 온도": "297.0 K",
+    "공정 온도": "308.1 K",
+    "회전 속도": "1,355 rpm",
+    "토크": "43.7 Nm",
+    "공구 마모": "217 min",
+    "temp_diff(파생)": "11.1 K",
+    "power(파생)": "6,201 W",
+    "마모×토크(파생)": "9,483"
+   },
+   "shap": [
+    {
+     "feature": "공기 온도",
+     "value": "297.0 K",
+     "shap": -0.03710116674175969
+    },
+    {
+     "feature": "공정 온도",
+     "value": "308.1 K",
+     "shap": -0.03400432297640139
+    },
+    {
+     "feature": "회전 속도",
+     "value": "1,355 rpm",
+     "shap": 0.11043006892177541
+    },
+    {
+     "feature": "토크",
+     "value": "43.7 Nm",
+     "shap": -0.05413874279726231
+    },
+    {
+     "feature": "공구 마모",
+     "value": "217 min",
+     "shap": 0.25215654565229156
+    },
+    {
+     "feature": "temp_diff(파생)",
+     "value": "11.1 K",
+     "shap": -0.08773864169674657
+    },
+    {
+     "feature": "power(파생)",
+     "value": "6,201 W",
+     "shap": -0.05428309595158329
+    },
+    {
+     "feature": "마모×토크(파생)",
+     "value": "9,483",
+     "shap": -0.03161266983006189
+    },
+    {
+     "feature": "Type_H",
+     "value": "아니오",
+     "shap": 0.003675504436590875
+    },
+    {
+     "feature": "Type_L",
+     "value": "예",
+     "shap": 0.031136934904537727
+    },
+    {
+     "feature": "Type_M",
+     "value": "아니오",
+     "shap": 0.00644174159679824
+    }
+   ],
+   "up": [
+    "공구 마모",
+    "회전 속도"
+   ],
+   "down": [
+    "temp_diff(파생)",
+    "power(파생)"
+   ]
+  }
+ },
+ "sample": {
+  "n": 200,
+  "fail": 6,
+  "comp": {
+   "TN": 190,
+   "TP": 6,
+   "FP": 4
+  },
+  "top10": [
+   {
+    "feature": "회전 속도",
+    "v": 0.10173911192151915
+   },
+   {
+    "feature": "power(파생)",
+    "v": 0.08801145559170971
+   },
+   {
+    "feature": "토크",
+    "v": 0.06980491460319674
+   },
+   {
+    "feature": "마모×토크(파생)",
+    "v": 0.06903099299833824
+   },
+   {
+    "feature": "공구 마모",
+    "v": 0.06834139190667657
+   },
+   {
+    "feature": "temp_diff(파생)",
+    "v": 0.06649581652263016
+   },
+   {
+    "feature": "공기 온도",
+    "v": 0.0289062781440824
+   },
+   {
+    "feature": "Type_L",
+    "v": 0.02537531782332614
+   },
+   {
+    "feature": "공정 온도",
+    "v": 0.013722121631568454
+   },
+   {
+    "feature": "Type_H",
+    "v": 0.007467854694589764
+   }
+  ]
+ }
+};
+const $=id=>document.getElementById(id), f3=v=>(v>=0?'+':'')+v.toFixed(3);
+$('thr').textContent=D.thr;
+const order=['TP','FN','FP']; let cur='TP';
+order.forEach(k=>{const b=document.createElement('button');b.textContent=D.cases[k].title;b.dataset.k=k;b.setAttribute('aria-pressed',k===cur);b.onclick=()=>{cur=k;render()};$('tabs').appendChild(b)});
+function explain(c){
+  const up=c.up.join(', ')||'없음', dn=c.down.join(', ')||'없음', p=c.proba.toFixed(3), t=D.thr;
+  const head=`예측점수 ${p}는 기준값 ${D.base.toFixed(3)}에서 출발했습니다. 고장 예측을 가장 크게 높인 변수는 <b>${up}</b>, 가장 크게 낮춘 변수는 <b>${dn}</b>입니다. `;
+  const ft=c.fail_types.length?` (실제 고장 유형 라벨: ${c.fail_types.join(', ')})`:'';
+  if(c.kind==='TP') return head+`최종 점수가 임계값 ${t}을 넘어 <b>고장으로 예측했고 실제로도 고장</b>이라 맞힌 사례입니다${ft}.`;
+  if(c.kind==='FN') return head+`높이는 힘이 있었지만 낮추는 변수들이 더 커서 최종 점수가 임계값 ${t}에 못 미쳤고, <b>실제 고장을 정상으로 판단해 놓친</b> 사례입니다${ft}.`;
+  return head+`최종 점수가 임계값 ${t}을 넘어 <b>고장으로 예측했지만 실제로는 정상</b>이라 오경보가 된 사례입니다.`;
+}
+function render(){
+  const c=D.cases[cur]; document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===cur));
+  $('info').innerHTML=`<div style="margin-bottom:8px"><span class="badge ${c.actual?'bg-f':'bg-n'}">실제 ${c.actual?'고장':'정상'}</span> <span class="badge ${c.pred?'bg-f':'bg-n'}">예측 ${c.pred?'고장':'정상'}</span></div>
+  <dl><dt>샘플 번호(UDI)</dt><dd>${c.udi}</dd><dt>제품 유형</dt><dd>${c.type}</dd><dt>예측점수</dt><dd><b>${c.proba.toFixed(3)}</b></dd><dt>임계값</dt><dd>${D.thr}</dd>
+  <dt>실제 고장 유형 라벨</dt><dd>${c.fail_types.join(', ')||'없음'}</dd>
+  ${Object.entries(c.values).map(([k,x])=>`<dt>${k}</dt><dd>${x}</dd>`).join('')}</dl>`;
+  $('wfTitle').textContent=`변수별 기여 (워터폴) - ${c.title}`;
+  const s=c.shap.slice().sort((a,b)=>Math.abs(b.shap)-Math.abs(a.shap)), main=s.slice(0,8), rest=s.slice(8);
+  const rows=main.map(x=>({l:`${x.feature} = ${x.value}`,v:x.shap}));
+  if(rest.length)rows.push({l:`나머지 ${rest.length}개 변수`,v:rest.reduce((a,x)=>a+x.shap,0)});
+  let run=D.base; rows.forEach(r=>{r.a=run;run+=r.v;r.b=run});
+  const xs=[D.base,c.proba,D.thr,...rows.map(r=>r.a),...rows.map(r=>r.b)], lo=Math.min(...xs)-.05, hi=Math.max(...xs)+.05;
+  const W=700,LM=215,RM=60,rh=30,H=rows.length*rh+50, X=x=>LM+(x-lo)/(hi-lo)*(W-LM-RM);
+  let g=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="워터폴 그래프">`;
+  rows.forEach((r,i)=>{const y=10+i*rh,x1=X(Math.min(r.a,r.b)),x2=X(Math.max(r.a,r.b));
+    g+=`<text x="${LM-8}" y="${y+16}" text-anchor="end" font-size="12">${r.l}</text><rect x="${x1}" y="${y+4}" width="${Math.max(1,x2-x1)}" height="18" rx="2" fill="${r.v>=0?'var(--up)':'var(--down)'}"><title>${r.l}: ${f3(r.v)}</title></rect><text x="${x2+5}" y="${y+17}" font-size="11">${f3(r.v)}</text>`});
+  const yb=10+rows.length*rh;
+  [[D.base,'기준값','var(--muted)','3 3'],[D.thr,'임계값','#ff7f0e','6 3'],[c.proba,'최종 '+c.proba.toFixed(3),'var(--ink)','']].forEach(([x,l,col,da],i)=>{g+=`<line x1="${X(x)}" x2="${X(x)}" y1="4" y2="${yb}" stroke="${col}" stroke-width="1.4" stroke-dasharray="${da}"/><text x="${X(x)}" y="${yb+14+(i%2)*13}" text-anchor="middle" font-size="11" style="fill:${col}">${l}</text>`});
+  $('wf').innerHTML=g+'</svg>'; $('expl').innerHTML=explain(c);
+}
+const sm=D.sample, mx=Math.max(...sm.top10.map(x=>x.v));
+$('sampInfo').textContent=`표본 구성: Test 무작위 ${sm.n}행 (실제 고장 ${sm.fail}건, 정상 ${sm.n-sm.fail}건 / 맞힘 ${sm.comp.TP||0}·놓침 ${sm.comp.FN||0}·오경보 ${sm.comp.FP||0}·정상 판정 ${sm.comp.TN||0})`;
+$('top10').innerHTML=sm.top10.map(x=>`<div class="bar"><span>${x.feature}</span><i style="width:${x.v/mx*100}%"></i><span>${x.v.toFixed(3)}</span></div>`).join('');
+render();
+</script></body></html>
