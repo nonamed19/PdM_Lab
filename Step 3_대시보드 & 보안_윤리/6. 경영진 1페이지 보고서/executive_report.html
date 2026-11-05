@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 예지보전 PoC 타당성 분석</title>
+<style>
+@page{size:A4;margin:9mm 10mm}
+:root{--ink:#14202e;--ink2:#455468;--muted:#6b7886;--line:#d5dce4;--navy:#17324d;--blue:#1f5fa8;--soft:#f3f6fa;--warn:#9a5b00;--warnbg:#fff6e3;--bad:#a8281c;--ok:#1d7a5b}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#e9edf2;color:var(--ink);font:9.2pt/1.42 "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+.page{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:9mm 10mm}
+@media print{body{background:#fff}.page{margin:0;padding:0;width:auto;min-height:0}}
+@media screen and (max-width:820px){.page{width:100%;padding:14px}.two,.kpi,.road{grid-template-columns:1fr!important}}
+header{border-bottom:3px solid var(--navy);padding-bottom:5px;margin-bottom:6px}
+h1{font-size:19pt;margin:0;color:var(--navy);letter-spacing:-.3px}
+.sub{color:var(--ink2);font-size:8.6pt;margin-top:1px}
+.alert{background:var(--warnbg);border:1px solid #f0d9a4;border-left:4px solid #d9942b;border-radius:4px;padding:4px 8px;font-size:8.4pt;color:#5a3a00;margin-bottom:6px}
+.alert b{color:#3f2900}
+h2{font-size:10.2pt;margin:7px 0 3px;color:var(--navy);display:flex;align-items:center;gap:6px}
+h2 span.n{display:inline-block;background:var(--navy);color:#fff;border-radius:3px;font-size:8.5pt;padding:0 6px}
+.sum{margin:0;padding:0;list-style:none}
+.sum li{padding:3px 8px;margin-bottom:2px;background:var(--soft);border-left:3px solid var(--blue);border-radius:2px}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.k{border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:4px;padding:4px 8px}
+.k .l{font-size:8pt;color:var(--muted);font-weight:700}
+.k .v{font-size:19pt;font-weight:800;color:var(--navy);line-height:1.15;font-variant-numeric:tabular-nums}
+.k .s{font-size:7.9pt;color:var(--ink2)}
+.tag{display:inline-block;font-size:7.4pt;font-weight:700;border-radius:3px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.tag.m{background:#e3f1ec;color:var(--ok);border:1px solid #b9dccd}
+.tag.a{background:#fff0d4;color:var(--warn);border:1px solid #efd199}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two table td:first-child{white-space:nowrap}
+table{border-collapse:collapse;width:100%;font-size:8.3pt;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:2px 4px;text-align:left;vertical-align:top}
+th{background:var(--soft);color:var(--ink2);font-weight:700}
+td.r,th.r{text-align:right}
+.g0{color:#2f6db5;font-weight:700}.g1{color:#9a7a00;font-weight:700}.g2{color:#c4640a;font-weight:700}.g3{color:var(--bad);font-weight:700}
+ul.b{margin:2px 0 0;padding-left:14px}ul.b li{margin-bottom:1px}
+.note{font-size:7.9pt;color:var(--muted);margin-top:2px}
+.road{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ph{border:1px solid var(--line);border-radius:4px;padding:4px 7px}
+.ph .t{font-weight:800;color:#fff;border-radius:3px;padding:1px 7px;display:inline-block;font-size:8.6pt;margin-bottom:2px}
+.ph:nth-child(1) .t{background:#1f5fa8}.ph:nth-child(2) .t{background:#2c7a8a}.ph:nth-child(3) .t{background:#4a5a9a}
+.ph ul{margin:1px 0 0;padding-left:13px;font-size:8.2pt}
+.foot{margin-top:6px;border-top:1px solid var(--line);padding-top:3px;font-size:7.6pt;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <h1>AI 예지보전 PoC 타당성 분석</h1>
+  <div class="sub">CNC 밀링 센서 데이터(AI4I 2020 공개 합성 데이터) 기반 · 교육용 분석 결과 요약</div>
+</header>
+<div class="alert"><b>본 결과는 센서가 관측된 시점의 정상·고장 분류 성능이며, 미래 고장의 사전 탐지 성과가 아닙니다.</b> 합성 데이터 기반이므로 실제 설비 성능·절감 실적이 아닙니다. 임계값은 Test에서 고른 <b>탐색적 결과</b>입니다.</div>
+
+<h2><span class="n">1</span>Executive Summary</h2>
+<ul class="sum">
+  <li>랜덤포레스트가 원본 Test 2,000건에서 고장 68건 중 58건을 고장으로 분류해 <b>재현율 85.3%</b>를 보였으나(임계값 0.44, 탐색적), 놓친 고장 10건·오경보 41건이 남았습니다.</li>
+  <li>연 2,000건·탐지 고장 100% 예방·고장 5,000만 원/건 등 <b>가정</b> 하에서 운영비 차감 후 연간 순절감액은 <b>23.69억 원(ROI 1,184.5%)</b>이며, 실적이 아닌 시나리오(초기 구축비 미포함)입니다.</li>
+  <li>합성 데이터 결과이므로, <b>3개월 파일럿</b>에서 별도 검증 데이터로 임계값·성능·예방률·비용을 실측한 뒤 확대 여부를 판단할 것을 제안합니다.</li>
+</ul>
+
+<h2><span class="n">2</span>핵심 수치</h2>
+<div class="kpi">
+  <div class="k"><div class="l">재현율 (Recall)<span class="tag m">측정 · 탐색적</span></div><div class="v">85.3%</div><div class="s">Test 고장 68건 중 58건 · 임계값 0.44</div></div>
+  <div class="k"><div class="l">연간 순절감액<span class="tag a">가정 기반</span></div><div class="v">23.69억 원</div><div class="s">운영비 2억 원 <b>차감 후</b> (차감 전 25.69억 원)</div></div>
+  <div class="k"><div class="l">ROI<span class="tag a">가정 기반</span></div><div class="v">1,184.5%</div><div class="s">순절감액 ÷ 연간 운영비 · 구축비 미포함</div></div>
+</div>
+
+<div class="two">
+<div>
+<h2><span class="n">3</span>모델 성능과 평가 조건</h2>
+<table>
+<tr><th>항목</th><th>내용 (측정값)</th></tr>
+<tr><td>데이터</td><td>AI4I 2020 합성 10,000건 (고장 339건, 3.39%). 학습 8,000건→SMOTENC로 15,458건(1:1), <b>평가는 원본 Test 2,000건</b>(고장 68건)</td></tr>
+<tr><td>모델</td><td>랜덤포레스트(200그루), ROC-AUC 0.974</td></tr>
+<tr><td>임계값</td><td><b>0.44</b> — Test에서 Recall ≥ 0.85를 만족하는 가장 큰 값(<b>탐색적</b>, 독립 평가 아님). 기본 0.5에서는 재현율 82.4%</td></tr>
+<tr><td>놓친 고장</td><td><b>10건</b> (기본 0.5: 12건) — 다운타임 리스크</td></tr>
+<tr><td>오경보</td><td><b>41건</b> (기본 0.5: 38건) — 점검 비용 · 정밀도 58.6%</td></tr>
+</table>
+<div class="note">주요 약점: 공구 마모(TWF) 고장은 Test 10건 중 3건만 분류(임계값 0.44).</div>
+</div>
+<div>
+<h2><span class="n">4</span>교육용 경보 기준과 확인 절차 제안</h2>
+<table>
+<tr><th>등급(점수)</th><th class="r">Test</th><th>확인 SLA(예시)</th></tr>
+<tr><td class="g0">정상 &lt;0.30</td><td class="r">1,866</td><td>해당 없음</td></tr>
+<tr><td class="g1">주의 0.30~0.60</td><td class="r">57</td><td>4시간 내 확인 착수</td></tr>
+<tr><td class="g2">경고 0.60~0.85</td><td class="r">35</td><td>1시간 내 확인, 4시간 내 점검 착수</td></tr>
+<tr><td class="g3">위험 ≥0.85</td><td class="r">42</td><td>즉시 확인(15분 내), 30분 내 긴급 점검</td></tr>
+</table>
+<ul class="b">
+<li><b>확인 절차:</b> 담당자가 점수·센서값·이력 확인 → 점검 → 결과 기록(이상 없음도 오경보로 기록).</li>
+<li><b>에스컬레이션:</b> 담당자 → 팀장 → 공장장 (미응답·미해소 시간 초과 시).</li>
+<li><b>정지 여부는 자동 결정하지 않고</b> 현장 절차에 따라 담당자가 판단합니다.</li>
+</ul>
+<div class="note">경계값은 상위 등급. 점수는 <b>미보정 모델 출력</b>이며 실제 확률이 아닙니다. 등급·조치·SLA는 <b>교육용 예시</b>로 현장 기준 검증이 필요합니다. 위험 등급만 대응하면 Test 고장의 45.6%(31건)를 놓칩니다.</div>
+</div>
+</div>
+
+<h2><span class="n">5</span>로드맵 (시작 후 누적 기준)</h2>
+<div class="road">
+<div class="ph"><span class="t">~3개월 파일럿</span><ul><li>승인된 환경에서 실제 설비 데이터로 <b>검증 데이터(임계값 선정)</b>와 <b>미사용 Test(평가)</b> 분리</li><li>소수 라인에서 경보 기준·SLA 현장 검증</li><li>오경보 대응 시간·비용, 예방 가능 비율 실측</li></ul></div>
+<div class="ph"><span class="t">~6개월 확대</span><ul><li>대상 라인 확대, 성능·오경보율 월간 점검</li><li>실측 비용·구축비·운영비로 <b>ROI 재계산</b></li><li>개인정보·외부 AI 사용 기준 확정</li></ul></div>
+<div class="ph"><span class="t">~12개월 고도화</span><ul><li>약점 유형(TWF 등) 개선, 점수 확률 보정</li><li>주기적 재학습·데이터 변화 점검</li><li>미래 고장의 사전 탐지는 <b>시계열 기반 별도 PoC</b>로 검토(본 결과에 불포함)</li></ul></div>
+</div>
+
+<h2><span class="n">6</span>리스크와 현장 추가 검증</h2>
+<div class="two">
+<ul class="b">
+<li><b>데이터:</b> 합성 데이터이며 실제 설비 성능이 아님. 일부 입력은 데이터 생성 규칙 기반 파생변수.</li>
+<li><b>평가:</b> 임계값을 Test에서 골라 낙관적, 분할 1회·교차검증 없음.</li>
+<li><b>가정:</b> 연 건수·100% 예방·비용은 가정. 예방 성공 50%이면 순절감액 10.64억 원(ROI 532.0%).</li>
+<li><b>비용:</b> 초기 구축비 미포함, 손익분기 고장 비용 약 916만 원/건.</li>
+</ul>
+<ul class="b">
+<li><b>검증:</b> 별도 검증 데이터에서 임계값 결정 후 미사용 Test로 평가, 시점 분리 검증.</li>
+<li><b>운영:</b> 오경보 대응 부담·책임체계, 라벨 품질, 데이터 변화 모니터링.</li>
+<li><b>보안:</b> 실제 자료는 승인된 환경에서 처리, 외부 AI 사용 전 회사 기준 확인.</li>
+<li><b>설명:</b> 변수 중요도·SHAP은 모델 판단 설명이며 고장 원인의 증명이 아님.</li>
+</ul>
+</div>
+<div class="foot">측정: 모델 평가 결과(원본 Test) · 가정: 연간 건수, 100% 예방, 고장 5,000만 원/건, 점검 100만 원, 정비 500만 원, 운영비 연 2억 원 · 순절감액 = TP×(고장비용−정비비) − FP×점검비 − 운영비 · 본 문서의 모든 수치는 기존 평가표·계산식과 대조 완료(number_check.csv)</div>
+</div>
+</body>
+</html>
