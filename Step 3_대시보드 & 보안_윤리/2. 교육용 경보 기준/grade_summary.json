@@ -1,0 +1,55 @@
+{
+ "grades": [
+  {
+   "grade": "정상",
+   "samples": 1866,
+   "observed_failures": 8,
+   "share_pct": 93.3,
+   "observed_failure_share_pct": 0.4
+  },
+  {
+   "grade": "주의",
+   "samples": 57,
+   "observed_failures": 6,
+   "share_pct": 2.85,
+   "observed_failure_share_pct": 10.5
+  },
+  {
+   "grade": "경고",
+   "samples": 35,
+   "observed_failures": 17,
+   "share_pct": 1.75,
+   "observed_failure_share_pct": 48.6
+  },
+  {
+   "grade": "위험",
+   "samples": 42,
+   "observed_failures": 37,
+   "share_pct": 2.1,
+   "observed_failure_share_pct": 88.1
+  }
+ ],
+ "cumulative": [
+  {
+   "기준": "주의 이상",
+   "알림": 134,
+   "적발": 60,
+   "오경보": 74,
+   "재현율": 88.2
+  },
+  {
+   "기준": "경고 이상",
+   "알림": 77,
+   "적발": 54,
+   "오경보": 23,
+   "재현율": 79.4
+  },
+  {
+   "기준": "위험 이상",
+   "알림": 42,
+   "적발": 37,
+   "오경보": 5,
+   "재현율": 54.4
+  }
+ ]
+}

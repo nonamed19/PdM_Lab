@@ -1,0 +1,5 @@
+﻿grade,samples,observed_failures,share_pct,observed_failure_share_pct
+정상,1866,8,93.3,0.4
+주의,57,6,2.85,10.5
+경고,35,17,1.75,48.6
+위험,42,37,2.1,88.1
