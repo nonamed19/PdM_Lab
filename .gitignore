@@ -1,2 +1,35 @@
 # 가명처리 대응표(비공개): 저장소·공유 대상에서 제외
 _비공개_대응표/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# 가상환경
+.venv/
+venv/
+env/
+
+# 환경변수·비밀 정보
+.env
+.env.*
+*.key
+*.pem
+
+# IDE / 에디터
+.vscode/
+.idea/
+*.swp
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 임시·로그 파일
+*.log
+*.tmp
+~$*
