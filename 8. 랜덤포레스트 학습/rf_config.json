@@ -1,0 +1,30 @@
+{
+ "model": "RandomForestClassifier",
+ "params": {
+  "n_estimators": 200,
+  "random_state": 42,
+  "class_weight": "balanced"
+ },
+ "threshold": 0.5,
+ "train_shape": [
+  15458,
+  11
+ ],
+ "train_class_counts": {
+  "0": 7729,
+  "1": 7729
+ },
+ "features": [
+  "air_temp",
+  "process_temp",
+  "rpm",
+  "torque",
+  "tool_wear",
+  "temp_diff",
+  "power",
+  "tool_torque_interaction",
+  "Type_H",
+  "Type_L",
+  "Type_M"
+ ]
+}
